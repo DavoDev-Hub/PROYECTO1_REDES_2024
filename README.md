@@ -30,8 +30,8 @@ Clona el repositorio:
 
 Abre una terminal y ejecuta el siguiente comando para clonar el repositorio:
 ```
-git clone https://github.com/DavoDev-Hub/Proyecto_Redes_2024_CRUD.git
-cd Proyecto_Redes_2024_CRUD
+git clone https://github.com/DavoDev-Hub/Proyecto1_Redes_2024_CRUD.git
+cd Proyecto1_Redes_2024_CRUD
 ```
 Construye y ejecuta los contenedores con Docker Compose:
 Ejecuta el siguiente comando para construir y ejecutar los contenedores:
