@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'  
 services:
   db:
     image: mysql:5.7
@@ -9,16 +9,28 @@ services:
       - db_data:/var/lib/mysql
     ports:
       - "3306:3306"
+    healthcheck: 
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: --general-log=1 --general-log-file=/var/lib/mysql/general.log 
 
   backend:
     build: ./backend
-    environment:
+    environment: 
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_HOST: ${MYSQL_HOST}
     ports:
       - "5000:5000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy  
+    volumes:  
+      - ./backend/.env:/app/.env
 
   frontend:
     build: ./frontend
