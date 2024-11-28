@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
-import "./App.css"; // Asegúrate de importar los estilos
+import React, { useState, useEffect } from "react";
+import "./App.css";
 
-function ProplayersList() {
-  const [proplayers, setProplayers] = useState([]);
-  const [editPlayer, setEditPlayer] = useState(null);
+function App() {
+  const [players, setPlayers] = useState([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState(null);
   const [newPlayer, setNewPlayer] = useState({
     nombre: "",
     foto: "",
@@ -11,150 +13,194 @@ function ProplayersList() {
   });
 
   useEffect(() => {
-    fetchProplayers();
+    fetchPlayers();
   }, []);
 
-  const fetchProplayers = () => {
-    fetch("http://localhost:5000/api/proplayers")
-      .then((response) => response.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setProplayers(data);
-        } else {
-          console.error("Error: la respuesta no es un arreglo", data);
-          setProplayers([]); // Establece un arreglo vacío si la respuesta no es un arreglo
-        }
-      })
-      .catch((error) => console.error("Error fetching data:", error));
-  };
-
-  const handleDelete = (id) => {
-    fetch(`http://localhost:5000/api/proplayers/${id}`, {
-      method: "DELETE",
-    })
-      .then(() => fetchProplayers())
-      .catch((error) => console.error("Error deleting proplayer:", error));
+  const fetchPlayers = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/proplayers");
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setPlayers(data);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
   const handleEdit = (player) => {
-    setEditPlayer(player);
+    setEditingPlayer(player);
+    setShowEditModal(true);
   };
 
-  const handleUpdate = () => {
-    fetch(`http://localhost:5000/api/proplayers/${editPlayer.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(editPlayer),
-    })
-      .then(() => {
-        setEditPlayer(null);
-        fetchProplayers();
-      })
-      .catch((error) => console.error("Error updating proplayer:", error));
+  const handleUpdate = async () => {
+    try {
+      await fetch(`http://localhost:5000/api/proplayers/${editingPlayer.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editingPlayer),
+      });
+      setShowEditModal(false);
+      fetchPlayers();
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setEditPlayer({ ...editPlayer, [name]: value });
+  const handleAdd = async () => {
+    try {
+      await fetch("http://localhost:5000/api/proplayers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newPlayer),
+      });
+      setShowAddModal(false);
+      setNewPlayer({ nombre: "", foto: "", earnings: "" });
+      fetchPlayers();
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
-  const handleCreate = () => {
-    fetch("http://localhost:5000/api/proplayers", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newPlayer),
-    })
-      .then(() => {
-        setNewPlayer({ nombre: "", foto: "", earnings: "" });
-        fetchProplayers();
-      })
-      .catch((error) => console.error("Error creating proplayer:", error));
-  };
-
-  const handleNewPlayerChange = (e) => {
-    const { name, value } = e.target;
-    setNewPlayer({ ...newPlayer, [name]: value });
+  const handleDelete = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/proplayers/${id}`, {
+        method: "DELETE",
+      });
+      fetchPlayers();
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
   return (
-    <div className="ProplayersList-container">
-      <h2>Lista de Proplayers</h2>
+    <div className="container">
+      <header className="header">
+        <div className="header-content">
+          <div className="center-section">
+            <img src="/mexicanlogo.jpg" alt="Logo" className="logo" />
+            <div className="title-button-container">
+              <h1>MEXICAN MONKEYS</h1>
+              <button
+                className="add-button"
+                onClick={() => setShowAddModal(true)}
+              >
+                Agregar Proplayer
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
 
-      {/* Formulario para crear un nuevo proplayer */}
-      <div className="add-player-form">
-        <h3>Agregar Nuevo Proplayer</h3>
-        <input
-          type="text"
-          name="nombre"
-          value={newPlayer.nombre}
-          onChange={handleNewPlayerChange}
-          placeholder="Nombre"
-        />
-        <input
-          type="text"
-          name="foto"
-          value={newPlayer.foto}
-          onChange={handleNewPlayerChange}
-          placeholder="URL de la Foto"
-        />
-        <input
-          type="number"
-          name="earnings"
-          value={newPlayer.earnings}
-          onChange={handleNewPlayerChange}
-          placeholder="Ganancias"
-        />
-        <button onClick={handleCreate}>Agregar Proplayer</button>
-      </div>
-
-      <div className="proplayer-cards">
-        {(proplayers || []).map((player) => (
-          <div className="proplayer-card" key={player.id}>
+      <div className="players-grid">
+        {players.map((player) => (
+          <div key={player.id} className="player-card">
+            <img
+              src={player.foto}
+              alt={player.nombre}
+              className="player-image"
+            />
             <h3>{player.nombre}</h3>
-            <img src={player.foto} alt={player.nombre} width="100" />
-            <p>Ganancias: ${player.earnings}</p>
-            <button onClick={() => handleEdit(player)}>Editar</button>
-            <button onClick={() => handleDelete(player.id)}>Eliminar</button>
+            <p>Ganancias: ${Number(player.earnings).toLocaleString()}</p>
+            <div className="card-buttons">
+              <button onClick={() => handleEdit(player)}>Editar</button>
+              <button onClick={() => handleDelete(player.id)}>Eliminar</button>
+            </div>
           </div>
         ))}
       </div>
 
-      {editPlayer && (
-        <div className="edit-player-form">
-          <h3>Editar Proplayer</h3>
-          <input
-            type="text"
-            name="nombre"
-            value={editPlayer.nombre}
-            onChange={handleChange}
-            placeholder="Nombre"
-          />
-          <input
-            type="text"
-            name="foto"
-            value={editPlayer.foto}
-            onChange={handleChange}
-            placeholder="URL de la Foto"
-          />
-          <input
-            type="number"
-            name="earnings"
-            value={editPlayer.earnings}
-            onChange={handleChange}
-            placeholder="Ganancias"
-          />
-          <button onClick={handleUpdate}>Guardar cambios</button>
-          <button className="cancel" onClick={() => setEditPlayer(null)}>
-            Cancelar
-          </button>
+      {showEditModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>Editar Proplayer</h2>
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={editingPlayer.nombre}
+              onChange={(e) =>
+                setEditingPlayer({ ...editingPlayer, nombre: e.target.value })
+              }
+            />
+            <input
+              type="text"
+              placeholder="URL de la foto"
+              value={editingPlayer.foto}
+              onChange={(e) =>
+                setEditingPlayer({ ...editingPlayer, foto: e.target.value })
+              }
+            />
+            <input
+              type="number"
+              placeholder="Ganancias"
+              value={editingPlayer.earnings}
+              onChange={(e) =>
+                setEditingPlayer({ ...editingPlayer, earnings: e.target.value })
+              }
+            />
+            <div className="modal-buttons">
+              <button className="save-button" onClick={handleUpdate}>
+                Guardar cambios
+              </button>
+              <button
+                className="cancel-button"
+                onClick={() => setShowEditModal(false)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>Agregar Proplayer</h2>
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={newPlayer.nombre}
+              onChange={(e) =>
+                setNewPlayer({ ...newPlayer, nombre: e.target.value })
+              }
+            />
+            <input
+              type="text"
+              placeholder="URL de la foto"
+              value={newPlayer.foto}
+              onChange={(e) =>
+                setNewPlayer({ ...newPlayer, foto: e.target.value })
+              }
+            />
+            <input
+              type="number"
+              placeholder="Ganancias"
+              value={newPlayer.earnings}
+              onChange={(e) =>
+                setNewPlayer({ ...newPlayer, earnings: e.target.value })
+              }
+            />
+            <div className="modal-buttons">
+              <button className="save-button" onClick={handleAdd}>
+                Agregar
+              </button>
+              <button
+                className="cancel-button"
+                onClick={() => setShowAddModal(false)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-export default ProplayersList;
+export default App;
